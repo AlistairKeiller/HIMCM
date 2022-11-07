@@ -69,7 +69,7 @@ function hive(du, u, p, t)
     du[4] = H*R_p(H, F_p, F_n, f_p)-m_p*F_p
     du[5] = H*R_n(H, F_p, F_n, f_n)-m_n*F_n
     du[6] = μ_p(t)*c*F_p-P_o*B_o-P_H*H
-    du[7] = μ_n(t)*c*F_n-P_o*B_o-N_A*(H+F_p+F_n)
+    du[7] = μ_n(t)*c*F_n-N_o*B_o-N_A*(H+F_p+F_n)
 end
 
 u_0 = [0,0,16000,2000,6000,0,0]
