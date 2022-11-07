@@ -34,11 +34,11 @@ P_H = 0.007
 # food gathered per day per forager
 c = 0.1
 # mortality rate of pollen forgers
-m_p = 0.3
+m_p = 0.1
 # mortality rate of nectar forgers
-m_n = 0.3
+m_n = 0.1
 # mortality of capped broods
-m_c = 0.06
+m_c = 0
 # the maximum amount of pollen that can be consumed by a hive bee as a food to be saturated
 K = 8
 
@@ -72,8 +72,8 @@ function hive(du, u, p, t)
     du[7] = μ_n(t)*c*F_n-P_o*B_o-N_A*(H+F_p+F_n)
 end
 
-u_0 = [1000,1000,1000,1000,1000,1000,1000]
-tspan = (0.0,1000.0)
+u_0 = [0,0,16000,2000,6000,0,0]
+tspan = (0.0,350.0)
 
 prob = ODEProblem(hive,u_0,tspan)
 sol = solve(prob)
