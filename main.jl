@@ -81,4 +81,4 @@ sol = solve(prob)
 import Pkg; Pkg.add("Plots")
 using Plots
 
-plot(sol)
+plot(sol, title = "Bee Thing", label=["B_o" "B_c" "H" "F_p" "F_n" "f_p" "f_n"])
