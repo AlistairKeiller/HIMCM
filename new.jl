@@ -44,15 +44,15 @@ function hive(du, u, p, t)
     du[2] = -iB/n_B+p_t0*k_NB*iN*B-k_rem*iB*N-k_d*iB
     du[3] = B/n_B-N/n_N-p_t1*k_RN*iR_1*N-p_trem*k_rem*iB*N
     # The paper says B_i, but it seems like they meant iB
-    du[4] = iB/n_B-iN/n_N+p_t1*k_RN*iR_1*N+k_rem*iN*N+p_trem*k_rem*iB*N-k_d*iN
-    du[5] = N/n_N-R_0/n_R+k_FR*(F_1+iF_1)*R_0+R_1/t_s
+    du[4] = iB/n_B-iN/n_N+p_t1*k_RN*iR_1*N-k_rem*iN*N+p_trem*k_rem*iB*N-k_d*iN
+    du[5] = N/n_N-R_0/n_R-k_FR*(F_1+iF_1)*R_0+R_1/t_s
     du[6] = -R_1/n_R+k_FR*(F_1+(1-p_t2)*iF_1)*R_0-R_1/t_s
     du[7] = iN/n_N-iR_0/n_R-k_FR*(F_1+iF_1)*iR_0+iR_1/t_s
     du[8] = -iR_1/n_R+k_FR*(F_1+iF_1)*iR_0+p_t2*k_FR*iF_1*R_0-iR_1/t_s
     du[9] = R_0/n_R-F_0/n_F+k_FR*(R_0+iR_0)*F_1-k_r*F_0
-    du[10] = R_1/n_R-iF_0/n_F-k_FR*(R_0+iR_0)*F_1-k_r*iF_0
-    du[11] = iR_0/n_R-iF_0/n_F+k_FR*(R_0+iR_0)*iF_1+k_r*iF_0
-    du[12] = iR_1/n_R-iF_1/n_F-k_FR*(R_0+iR_0)*iF_1-p_surv*k_r*iF_0
+    du[10] = R_1/n_R-F_1/n_F-k_FR*(R_0+iR_0)*F_1-k_r*F_0
+    du[11] = iR_0/n_R-iF_0/n_F+k_FR*(R_0+iR_0)*iF_1-k_r*iF_0
+    du[12] = iR_1/n_R-iF_1/n_F-k_FR*(R_0+iR_0)*iF_1+p_surv*k_r*iF_0
 end
 
 u_0 = [0,0,0,0,0,0,0,0,0,0,0,0]
