@@ -55,7 +55,7 @@ function hive(du, u, p, t)
     du[12] = iR_1/n_R-iF_1/n_F-k_FR*(R_0+iR_0)*iF_1+p_surv*k_r*iF_0
 end
 
-u_0 = [0,0,0,0,0,0,0,0,0,0,0,0]
+u_0 = [100,100,100,100,100,100,100,100,100,100,100,100]
 tspan = (0.0,350.0)
 
 prob = ODEProblem(hive,u_0,tspan)
