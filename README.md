@@ -4,7 +4,14 @@
 
 # new
 
-[new.jl](new.jl) is an implementation of https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0247294 that seems to work. It has the equations:
+[new.jl](new.jl) is an implementation of https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0247294 that seems to work.
+
+Their equations:
+
+![eq1](eq1.png)
+![eq2](eq2.png)
+
+My equations:
 
 $$
 \begin{align*}
@@ -22,3 +29,7 @@ $$
 \frac{\mathrm{d} \mathrm{iF}_{1}\left( t \right)}{\mathrm{d}t} =& \frac{ - \mathrm{iF}_{1}\left( t \right)}{n_{F}} + \frac{\mathrm{iR}_{1}\left( t \right)}{n_{R}} + k_{r} p_{surv} \mathrm{iF}_{0}\left( t \right) - k_{FR} \left( R_{0}\left( t \right) + \mathrm{iR}_{0}\left( t \right) \right) \mathrm{iF}_{1}\left( t \right)
 \end{align*}
 $$
+
+If my LaTeX is not rendering, here is a screenshot of my equations:
+
+![myeq](myeq.png)
