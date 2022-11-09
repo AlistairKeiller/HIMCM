@@ -43,7 +43,7 @@ DailyForagingPeriod_s
 DailySwitchProbability = 0.13
 Date
 Day
-Daytime_s
+Daytime # s
 EnergyFactorOnFlower = 0.3
 EnergyHoney = 22.0 # kJ/ml
 EnergyRequiredForPollenAssimilation = 6.2 # kJ/g
@@ -196,28 +196,28 @@ struct bees
     broodAge
     caste
     colonyID
-    cropvolume_myl
-    cumulIncubationReceived_kJ
+    cropvolume # myl
+    cumulIncubationReceived # kJ
     cumulTimeEgg_d
     cumulTimeLarva_d
     cumulTimePupa_d
     currentFoodsource
     emergingDate
-    expectation_NectarTrip_s
-    expectation_PollenTrip_s
-    glossaLength_mm
+    expectation_NectarTrip # s
+    expectation_PollenTrip # s
+    glossaLength # mm
     knownMasterpatchesNectarList
     knownMasterpatchesPollenList
     mated
     mtDNA
-    nectarLoadSquadron_kJ
+    nectarLoadSquadron # kJ
     nectarsourceToGoTo
     number
-    personalTime_s
+    personalTime # s
     ploidy
     pollenForager
-    pollenLoadSquadron_g
-    pollenPellets_g
+    pollenLoadSquadron # g
+    pollenPellets # g
     pollensourceToGoTo
     speciesID
     speciesName
@@ -227,7 +227,7 @@ struct bees
     thForagingNectar
     thForagingPollen
     thNursing
-    weight_mg
+    weight # mg
 end
 
 struct colonies
@@ -250,14 +250,14 @@ struct colonies
     colonyAge
     colonyFoundationDay
     colonysize
-    colonyWeight_mg
+    colonyWeight # mg
     competitionPointDate
     eggDeathsIncubation
-    energyNeedToday_kJ
-    energyStore_kJ
+    energyNeedToday # kJ
+    energyStore # kJ
     eusocialPhaseDate
-    idealEnergyStore_kJ
-    idealPollenStore_g
+    idealEnergyStore # kJ
+    idealPollenStore # g
     larvaDeathsIncubation
     larvaDeathsWeight
     larvaWorkerRatio
@@ -266,8 +266,8 @@ struct colonies
     masterpatchesWithPollenlayersInFlowerAndRangeList
     nectarInFlowerAndRangeList
     pollenInFlowerAndRangeList
-    pollenNeedLarvaeToday_g
-    pollenStore_g
+    pollenNeedLarvaeToday # g
+    pollenStore # g
     pupaDeathsIncubation
     queenProduction::Bool
     queenProductionDate
@@ -278,7 +278,7 @@ struct colonies
     stimNectarForaging
     stimNursing
     stimPollenForaging
-    summedIncubationToday_kJ
+    summedIncubationToday # kJ
     switchPointDate
     totalAdultsProduced
     totalEggsProduced
@@ -310,14 +310,14 @@ struct deadCols
   colonyAge
   colonyFoundationDay
   colonysize
-  colonyWeight_mg
+  colonyWeight # mg
   competitionPointDate
   eggDeathsIncubation
-  energyNeedToday_kJ
-  energyStore_kJ
+  energyNeedToday # kJ
+  energyStore # kJ
   eusocialPhaseDate
-  idealEnergyStore_kJ
-  idealPollenStore_g
+  idealEnergyStore # kJ
+  idealPollenStore # g
   larvaDeathsIncubation
   larvaDeathsWeight
   larvaWorkerRatio
@@ -326,8 +326,8 @@ struct deadCols
   masterpatchesWithPollenlayersInFlowerAndRangeList
   nectarInFlowerAndRangeList
   pollenInFlowerAndRangeList
-  pollenNeedLarvaeToday_g
-  pollenStore_g
+  pollenNeedLarvaeToday # g
+  pollenStore # g
   pupaDeathsIncubation
   queenProduction::Bool
   queenProductionDate
@@ -337,7 +337,7 @@ struct deadCols
   stimNectarForaging
   stimNursing
   stimPollenForaging
-  summedIncubationToday_kJ
+  summedIncubationToday # kJ
   switchPointDate
   totalAdultsProduced
   totalEggsProduced
@@ -352,7 +352,7 @@ struct species
     batchsize
     chanceFindNest
     dev_larvalAge_QueenDetermination_d
-    dev_Q_DeterminationWeight_mg
+    dev_Q_DeterminationWeight # mg
     devAge_Q_EmergingMax_d
     devAge_Q_EmergingMin_d
     devAge_Q_PupationMax_d
@@ -363,69 +363,69 @@ struct species
     devAgeHatchingMin_d
     devAgePupationMax_d
     devAgePupationMin_d
-    devIncubation_Q_EmergingTH_kJ
-    devIncubation_Q_PupationTH_kJ
-    devIncubationEmergingTH_kJ
-    devIncubationHatchingTH_kJ
-    devIncubationPupationTH_kJ
-    devQuotaIncubationToday_kJ
+    devIncubation_Q_EmergingTH # kJ
+    devIncubation_Q_PupationTH # kJ
+    devIncubationEmergingTH # kJ
+    devIncubationHatchingTH # kJ
+    devIncubationPupationTH # kJ
+    devQuotaIncubationToday # kJ
     devWeight_Q_PupationMax_mg
-    devWeight_Q_PupationMin_mg
+    devWeight_Q_PupationMin # mg
     devWeightEgg_mg
-    devWeightPupationMax_mg
-    devWeightPupationMin_mg
+    devWeightPupationMax # mg
+    devWeightPupationMin # mg
     emergingDay_mean
     emergingDay_sd
-    flightCosts_kJ/m/mg
-    flightVelocity_m/s
+    flightCosts # kJ/m/mg
+    flightVelocity # m/s
     growthFactor
     maxLifespanWorkers
-    minPollenStore_g
+    minPollenStore # g
     minToMaxFactor
     name
     nestHabitatsList
     nestSiteArea
     nestsiteFoodsourceList
     pollenToBodymassFactor
-    proboscis_max_mm
-    proboscis_min_mm
-    searchLength_m
+    proboscis_max # mm
+    proboscis_min # mm
+    searchLength # m
     seasonStop
     specMax_cropVolume_myl
-    specMax_pollenPellets_g
+    specMax_pollenPellets # g
     timeUnloading
 end
 
 struct foodsources
-    area_sqm
+    area # m^2
     colorMemo
-    corollaDepth_mm
+    corollaDepth # mm
     cumulNectarVisits
     cumulPollenVisits
     flowerSpecies_relativeAbundanceList
     flowerSpeciesList
     id_Beescout
-    interFlowerTime_s
+    interFlowerTime # s
     layersInPatchList
     masterpatch::Bool
     masterpatchID
-    nectar_myl
-    nectarConcentration_mol/l
-    nectarFlowerVolume_myl
-    nectarMax_myl
+    nectar # myl
+    nectarConcentration # mol/l
+    nectarFlowerVolume # myl
+    nectarMax # myl
     patchInfo
     patchType
-    pollen_g
-    pollenMax_g
+    pollen # g
+    pollenMax # g
     proteinPollenProp
-    radius_m
+    radius # m
     startDay
     stopDay
     farmland::Bool
     stewardshipSpeciesList
-    perimeter_m
+    perimeter # m
     occurrence
-    cso_area_m2
+    cso_area # m^2
 end
 
 struct patches
@@ -455,7 +455,7 @@ struct patchStatistics
     patchType
     flowerSpeciesList
     patchInfo
-    perimeter_m
+    perimeter # m
 end
 
 struct button
