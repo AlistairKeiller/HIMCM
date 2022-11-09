@@ -1,3 +1,4 @@
+# user params
 AbundanceBoost = 1
 BeeSpeciesInitialQueensList = [["B_terrestris", 500]]
 COLONIES_IBM = 0
@@ -26,3 +27,34 @@ StopExtinct::Bool = true
 UnlimitedMales::Bool = true
 Weather = "Constant 8 hrs" # remove
 
+# beesteward params
+AssertionViolated::Bool = false
+CallItaDay = 24*60*60
+CohortSymbolSize = 0.75 * MasterSizeFactor
+ColonySymbolsize = 9 * MasterSizeFactor
+DailySwitchProbability = 0.13
+EnergyFactorOnFlower = 0.3
+EnergyHoney = 22.67 # kJ/ml
+EnergyRequiredForPollenAssimilation = 6.2 # kJ/g
+EnergySucrose = 0.00582 # kJ/mymol
+FoodsourcesInFlowerUpdate::Bool = false
+FoodsourceSymbolSizeFactor = 1.5 * MasterSizeFactor
+ForagingRangeMax = 758 # m
+GetUpTime = 1 # s
+LarvaWorkerRatioTH = 3
+MaxLifespanMales = 30
+MetabolicRateFlight = 488.6 # W/kg
+MinFoodSourceSymbolSize = 2.5 * MasterSizeFactor
+MortalityAdultsBackground_daily = 0
+N_ForeignAlleles = 24
+NestSearchTime_h = 6
+NotSetHigh = 999999999999999
+NotSetLow = -999999999999999
+QueenDestinedEggsBeforeSP_d = 5
+QueensProducingColoniesList = []
+QueenSymbolSize = 2 * MasterSizeFactor
+StepWidth = 0.5 * MasterSizeFactor
+Sunrises = 8*60*60 # s
+SelectedFieldsList = []
+PopulationSizeDay365List = []
+Survived::Bool = true
