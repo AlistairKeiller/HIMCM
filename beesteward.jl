@@ -2,26 +2,9 @@ AbundanceBoost
 ActiveBee
 ActiveBeesSortedList
 AllParametersList
-AssertionMessage
-AssertionViolated::Bool = false
-BackgroundColor = 5
-Backgroundcolour
-BackgroundImage
 BehaviourSpaceParameters
 BehavSpaceParameterValuesList
 BehavSpaceCurrentValue
-Black_TH
-BorderColor
-BottomBorder
-BrushArea_ha
-BS_ScaleDistance_m
-Button1Monitor
-Button2Monitor
-Button3Monitor
-Button4Monitor
-Button5Monitor
-Button6Monitor
-Button7Monitor
 CallItaDay = 24*60*60 # s
 ChosenPatchtypeVariable
 CohortSymbolSize = 0.75 * MasterSizeFactor
@@ -31,13 +14,7 @@ ColonyDeathsNoBees
 ColonyDensity_km2
 ColonySymbolSize = 9 * MasterSizeFactor
 ColourCodeList
-CropRotationList = CropRotationListAsString # TODO: make a list
-CropRotationListAsString
-CSS_OptionsList = [ "margin", "legume", "plot" ]
-CSS_TotalAreaAll_ha
-CSS_TotalAreaLegume_ha
-CSS_TotalAreaMargin_ha
-CSS_TotalAreaPlot_ha
+CropRotationList = []
 CumulVisitsOnlyLastYear::Bool
 DailyForagingPeriod_s
 DailySwitchProbability = 0.13
@@ -59,7 +36,7 @@ ForagingFileList
 ForagingMortalityFactor
 ForagingMortalityModel
 ForagingRangeMax = 758 # m
-Gap_s
+Gap # s
 GenericInputNumber
 GenericRunCommandValue
 GetUpTime = 1 # s
@@ -67,30 +44,28 @@ Gridsize
 HabitatDataCSV
 HabitatsFile
 FoodsourcesFile = "Foodsources.txt"
-InspectTurtle
 KeepDeadColonies::Bool
 Lambda_detectProb
 LarvaWorkerRatioTH = 3
 MapAreaIncluded
 MasterSizeFactor
-MaxForagingRange_m
+MaxForagingRange # m
 MaxHibernatingQueens
 MaxLifespanMales = 30
-MaxPatchRadius_m
-MeanAdultWeight_mg
-MeanQueenWeight_mg
-MeanWorkerWeight_mg
+MaxPatchRadius # m
+MeanAdultWeight # mg
+MeanQueenWeight # mg
+MeanWorkerWeight # mg
 MergeHedges::Bool
 MetabolicRateFlight = 488.6 # W/kg
 MinFoodSourceSymbolSize = 2.5 * MasterSizeFactor
 MinSizeFoodSources::Bool
 MortalityAdultsBackground = 0 # 1/d
 MortalityForager # 1/s
-MyValue
 N_Badgers
 N_ForeignAlleles = 24
 N_Psithyrus
-NectarAvailableTotalToday_l
+NectarAvailableTotalToday # l
 NestSearchTime = 6 # h
 NotSetHigh = 999999999999999
 NotSetLow = -1 * NotSetHigh
@@ -123,7 +98,7 @@ ShowQueens::Bool
 ShowSearchingQueens::Bool
 ShowWeather::Bool
 BeespeciesFile
-SpeciesList
+SpeciesList = []
 StepWidth = 0.5 * MasterSizeFactor
 StopExtinct::Bool
 Sunrise = 8*60*60 # s
@@ -161,8 +136,7 @@ UserHabitatSelected
 Weather
 White_TH
 WinterMortality::Bool
-BeeSpeciesInitialQueensList
-BeeSpeciesInitialQueensListAsString
+BeeSpeciesInitialQueensList = []
 Report_name
 BeeSpeciesDefinedList
 InitialQueensModifierBehaviorSpace
