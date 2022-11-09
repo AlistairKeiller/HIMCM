@@ -144,13 +144,7 @@ PopulationSizeDay365List = []
 Survived::Bool = true
 TimeToExtinction
 
-if ForagingMortalityModel == "high"
-    MortalityForager = 1.0e-5
-elseif ForagingMortalityModel == "intermediate"
-    MortalityForager = 2.14E-06
-elseif ForagingMortalityModel == "low"
-    MortalityForager = 2.75E-07
-end
+
 
 struct habitats
     flowerspecieslist
@@ -343,9 +337,9 @@ struct species
     devIncubationHatchingTH # kJ
     devIncubationPupationTH # kJ
     devQuotaIncubationToday # kJ
-    devWeight_Q_PupationMax_mg
+    devWeight_Q_PupationMax # mg
     devWeight_Q_PupationMin # mg
-    devWeightEgg_mg
+    devWeightEgg # mg
     devWeightPupationMax # mg
     devWeightPupationMin # mg
     emergingDay_mean
