@@ -1,5 +1,5 @@
 AbundanceBoost = 1
-BeeSpeciesInitialQueensListAsString
+BeeSpeciesInitialQueensList = [["B_terrestris", 500]]
 COLONIES_IBM = 0
 CumulVisitsOnlyLastYear::Bool = false
 FlowerspeciesFile = "flowerspecies.csv" # replace in code
@@ -24,4 +24,5 @@ SexLocus::Bool = false
 BeespeciesFile = "beespecies.csv" # replace in code
 StopExtinct::Bool = true
 UnlimitedMales::Bool = true
-Weather = "Constant 8 hrs"
+Weather = "Constant 8 hrs" # remove
+
