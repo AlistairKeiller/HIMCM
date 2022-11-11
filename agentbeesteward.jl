@@ -16,7 +16,13 @@ end
 struct queen
 end
 
+struct species
+    name::Symbol
+    seasonStop::Int
+end
+
 @agent colony GridAgent{2} begin
+    species::species
     eggs::Vector{egg}
     larvae::Vector{larva}
     pupae::Vector{pupa}
@@ -34,19 +40,26 @@ struct flower
     season::UnitRange{Int}
     corolla_depth::Float64 # m
     inter_flower_time::Float64 # s
+    flower_quantities::Array{Int,2}
+    pollen_quantities::Array{Float64,2}
+    nectar_quantities::Array{Float64,2}
 end
 
 function colony_step!(colony, model)
     # seasonal events
-    
+    if model.day == colony.species.seasonStop
+        for agent in colony
+            agent.hibernating = true
+        end
+    end
 end
 
 function world_step!(model)
     # update food in tiles
     for flower in model.flowers
         if model.day in flower.season
-            pollen_quantities[flower.name] += flower_quantities[flower.name] * flower.pollen
-            nectar_quantities[flower.name] += flower_quantities[flower.name] * flower.nectar
+            flower.pollen_quantities += flower.flower_quantities * flower.pollen
+            flower.nectar_quantities += flower.flower_quantities * flower.nectar
         end
     end
 
@@ -54,24 +67,18 @@ function world_step!(model)
 end
 
 function create_word(
-    flowers::Vector{flower}=[flower(:dandelion, 0.000433333, 0.000470167, 0.000091663467, 1.294673289, 1:364, .0012, 0.6)],
-    land_type::Array{Symbol, 2} = fill(grass_land, 100, 100),
-    flower_quantities::Dict{Symbol, Array{Int, 2}} = Dict(:dandelion => ones(100, 100)),
-    pollen_quantities::Dict{Symbol, Array{Float64, 2}} = Dict(:dandelion => zeros(100, 100)),
-    nectar_quantities::Dict{Symbol, Array{Float64, 2}} = Dict(:dandelion => zeros(100, 100)),
+    flowers::Vector{flower} = [flower(:dandelion, 0.000433333, 0.000470167, 0.000091663467, 1.294673289, 1:364, .0012, 0.6, ones(Int, 100, 100), zeros(100, 100), zeros(100, 100))],
+    land_type::Array{Symbol, 2} = fill(:grass_land, 100, 100),
     tile_size::Float64 = 1.0,
     forging_time::Int = 8*60*60 # seconds per day
 )
-    space = GridSpace(size(food))
+    space = GridSpace(size(land_type))
     properties = Dict(
         :flowers => flowers,
         :land_type => land_type,
-        :flower_quantities => flower_quantities,
-        :pollen_quantities => pollen_quantities,
-        :nectar_quantities => nectar_quantities,
         :tile_size => tile_size,
-        :forging_time => forging_time
-        :day => 1,
+        :forging_time => forging_time,
+        :day => 1
     )
     model = ABM(colony, space; properties)
     return model
