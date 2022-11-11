@@ -1,26 +1,15 @@
-import Pkg; Pkg.add("Agents"); Pkg.add("InteractiveDynamics"); Pkg.add("CairoMakie")
-using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie
+import Pkg;
+Pkg.add("Agents");
+Pkg.add("InteractiveDynamics");
+Pkg.add("CairoMakie");
+using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie, Dates
 
-struct species
+struct Species
     name::Symbol
     seasonStop::Int
 end
 
-struct colony
-    position::Tuple{Int,Int}
-end
-
-@agent bees NoSpaceAgent begin
-    number::Int
-    colony::colony
-    species::species
-    type::Symbol # egg, larva, pupa, male, worker, queen
-    activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
-    emerging_date::Int
-end
-
-
-struct flower
+mutable struct Flowers
     name::Symbol
     protein_pollen_prop::Float64
     concentration::Float64 # mol/l
@@ -33,10 +22,23 @@ struct flower
     nectar_quantities::Array{Float64,2}
 end
 
-function bee_step!(bee, model)
+mutable struct Colony
+    position::Tuple{Int,Int}
+end
+
+@agent Bees NoSpaceAgent begin
+    number::Int
+    colony::colony
+    species::species
+    type::Symbol # egg, larva, pupa, male, worker, queen
+    activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
+    emerging_date::Int
+end
+
+function bees_step!(bees, model)
     # kill all bees that are not hibernating at the end of the season
-    if model.day == bee.colony.species.seasonStop && bee.activity != :hibernate
-        kill_agent!(bee, model)
+    if bees.species.seasonStop == model.tick % 365 && bees.activity != :hibernate
+        kill_agent!(bees, model)
     end
 
     # new queens emerge from hibernation and found new colonies (note: most queens will still be represented as cohorts here!) 
@@ -46,42 +48,44 @@ function bee_step!(bee, model)
     # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
     # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
     # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
-    for bee in model.bees
-        if bee.emerging_date == model.date
-            bee.activity = :emerging
+    if bee.emerging_date == model.tick
+        bee.activity = :emerging
+        # clone cohort based queens to become individuals
+        for _ ∈ 1:bee.number
+            add_agent!(Bees(bee.colony, bee.species, :queen, :emerging, model.tick), model)
         end
     end
 end
 
 function world_step!(model)
     # update food in tiles
-    for flower in model.flowers
-        if model.day in flower.season
-            flower.pollen_quantities += flower.pollen_production
-            flower.nectar_quantities += flower.nectar_production
+    for flowers ∈ model.flowers
+        if model.tick % 365 ∈ flowers.season
+            flowers.pollen_quantities += flower.pollen_production
+            flowers.nectar_quantities += flower.nectar_production
         end
     end
 
     # kill males in autumn if all queens are in hibernation and no brood is left
-    if !any(bee -> bee.type == :queen && bee.activity != :hibernate, model) && !any(bee -> bee.type == :egg || bee.type == :larva || bee.type == :pupa, model)
-        for bee in model
-            if bee.type == :male
-                kill_agent!(bee, model)
+    if !any(bees -> bees.type == :queen && bees.activity != :hibernate, model) && !any(bees -> bees.type == :egg || bees.type == :larva || bees.type == :pupa, model)
+        for bees ∈ model
+            if bees.type == :male
+                kill_agent!(bees, model)
             end
         end
     end
 
-    model.day = model.day % 365 + 1
+    model.tick += 1
 end
 
 function create_word(
-    flowers::Vector{flower} = [
-        flower(
+    flowers::Vector{Flowers}=[
+        Flowers(
             :dandelion,
             0.091663467,
             1.294673289,
             1:364,
-            .0012,
+            0.0012,
             0.6,
             ones(100, 100) * 0.000433333,
             ones(100, 100) * 0.000000470167,
@@ -89,16 +93,16 @@ function create_word(
             zeros(100, 100)
         )
     ],
-    land_type::Array{Symbol, 2} = fill(:grass_land, 100, 100),
-    tile_size::Float64 = 1.0,
-    forging_time::Int = 8*60*60 # seconds per day
+    land_type::Array{Symbol,2}=fill(:grass_land, 100, 100),
+    tile_size::Float64=1.0, # m
+    forging_time::Int=8 * 60 * 60 # seconds per day
 )
     properties = Dict(
         :flowers => flowers,
         :land_type => land_type,
         :tile_size => tile_size,
         :forging_time => forging_time,
-        :day => 1
+        :tick => 0,
     )
     model = ABM(colony, properties)
     return model
