@@ -1,19 +1,9 @@
 import Pkg; Pkg.add("Agents"); Pkg.add("InteractiveDynamics"); Pkg.add("CairoMakie")
 using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie
 
-struct egg
-end
-
-struct larva
-end
-
-struct pupa
-end
-
-struct adult
-end
-
-struct queen
+struct bee
+    type::Symbol # egg, larva, pupa, male, worker, queen
+    activity::Symbol # hibernate, nestConstruction, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
 end
 
 struct species
@@ -23,12 +13,7 @@ end
 
 @agent colony GridAgent{2} begin
     species::species
-    eggs::Vector{egg}
-    larvae::Vector{larva}
-    pupae::Vector{pupa}
-    adults::Vector{adult}
-    queens::Vector{queen}
-    hibernating::Bool
+    bees::Vector{bee}
 end
 
 struct flower
@@ -47,10 +32,13 @@ end
 
 function colony_step!(colony, model)
     # seasonal events
+    # kill all bees that are not hibernating at the end of the season
     if model.day == colony.species.seasonStop
-        for agent in colony
-            agent.hibernating = true
-        end
+        colony.bees = filter(bee -> bee.activity == :hibernate, colony.bees)
+    end
+    # kill males in autumn if all queens are in hibernation and no brood is left
+    if !any(bee -> bee.type == :queen && bee.activity != :hibernate, colony.bees) && !any(bee -> bee.type == :egg || bee.type == :larva || bee.type == :pupa, colony.bees)
+        colony.bees = filter(bee -> bee.type != :male, colony.bees)
     end
 end
 
