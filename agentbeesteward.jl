@@ -3,7 +3,11 @@ using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie
 
 struct bee
     type::Symbol # egg, larva, pupa, male, worker, queen
-    activity::Symbol # hibernate, nestConstruction, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
+    activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
+    emerging_date::Int
+    thEgglaying
+    thForagingNectar
+    thForagingPollen
 end
 
 struct species
@@ -39,6 +43,21 @@ function colony_step!(colony, model)
     # kill males in autumn if all queens are in hibernation and no brood is left
     if !any(bee -> bee.type == :queen && bee.activity != :hibernate, colony.bees) && !any(bee -> bee.type == :egg || bee.type == :larva || bee.type == :pupa, colony.bees)
         colony.bees = filter(bee -> bee.type != :male, colony.bees)
+    end
+
+
+
+    # new queens emerge from hibernation and found new colonies (note: most queens will still be represented as cohorts here!) 
+    # Winter survival (survivalProb) is calculated from Beekman et al 1998 (Entomologia Experimentalis et Applicata 89: 207–214, 1998)
+    # Fig. 1B: survival prob. is calculated from proportion of survivors to survivors + non-survivors. Fitted a sigmoid curve to the left site only, as the low surv. prob. of heavy queens
+    # is an artefact of the treatment:
+    # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
+    # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
+    # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
+    for bee in model.bees
+        if bee.emerging_date == model.date
+            bee.activity = :emerging
+        end
     end
 end
 
