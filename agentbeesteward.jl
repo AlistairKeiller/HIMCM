@@ -1,12 +1,14 @@
-import Pkg;
-Pkg.add("Agents");
-Pkg.add("InteractiveDynamics");
-Pkg.add("CairoMakie");
-using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie, Dates
+import Pkg
+Pkg.add("Agents")
+Pkg.add("InteractiveDynamics")
+Pkg.add("CairoMakie")
+using Agents, Agents.Pathfinding, InteractiveDynamics, CairoMakie
 
 struct Species
     name::Symbol
     seasonStop::Int
+    devWeight_Q_PupationMin::Float64 # mg
+    devWeight_Q_PupationMax::Float64 # mg
 end
 
 mutable struct Flowers
@@ -28,12 +30,25 @@ end
 
 @agent Bees NoSpaceAgent begin
     number::Int
-    colony::colony
-    species::species
+    colony::Union{Colony,Nothing}
+    species::Species
     type::Symbol # egg, larva, pupa, male, worker, queen
     activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
     emerging_date::Int
+    weight::Float64 # mg
 end
+
+function winter_mortality_probibility(bees){
+    # Winter survival (survival_probibility) is calculated from Beekman et al 1998 (Entomologia Experimentalis et Applicata 89: 207–214, 1998)
+    # Fig. 1B: survival prob. is calculated from proportion of survivors to survivors + non-survivors. Using the relative weight rather than the absolute weight, we fitted a sigmoid curve (survivalProb) to the left site only,
+    # as the low surv. prob. of heavy queens is an artefact of the treatment:
+    # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
+    # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
+    # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
+    
+    relative_weight = (bees.weight - bee.species.devWeight_Q_PupationMin) / ( bee.species.devWeight_Q_PupationMax - bee.species.devWeight_Q_PupationMin )
+    survival_probibility = 0.64 / (1 + ℯ ^ (-22 * (relative_weight - 0.32))) # returns survival_probibility
+}
 
 function bees_step!(bees, model)
     # kill all bees that are not hibernating at the end of the season
@@ -48,11 +63,19 @@ function bees_step!(bees, model)
     # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
     # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
     # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
-    if bee.emerging_date == model.tick
-        bee.activity = :emerging
+    if bees.emerging_date == model.tick
+        bees.activity = :emerging
         # clone cohort based queens to become individuals
-        for _ ∈ 1:bee.number
-            add_agent!(Bees(bee.colony, bee.species, :queen, :emerging, model.tick), model)
+        for _ ∈ 2:bees.number
+            add_agent!(Bees(1, bees.colony, bees.species, bees.type, bees.activity, bees.emerging_date, bees.weight), model)
+        end
+        bees.number = 1
+    end
+    if bees.activity == :emerging
+        # WINTER MORTALITY:
+        # Queen has a risk of dying over winter:
+        if rand() < winter_mortality_probibility(bees)
+            kill_agent!(bees, model)
         end
     end
 end
@@ -104,7 +127,7 @@ function create_word(
         :forging_time => forging_time,
         :tick => 0,
     )
-    model = ABM(colony, properties)
+    model = ABM(Bees, properties)
     return model
 end
 
