@@ -31,8 +31,7 @@ mutable struct Colony
     position::Tuple{Int,Int}
 end
 
-@agent Bees GridAgent{2} begin
-    number::Int
+@agent Bee GridAgent{2} begin
     colony::Union{Colony,Nothing}
     species::Species
     type::Symbol # egg, larva, pupa, male, worker, queen
@@ -41,7 +40,7 @@ end
     weight::Float64 # mg
 end
 
-function winter_mortality_probibility(bees){
+function winter_mortality_probibility(bee){
     # Winter survival (survival_probibility) is calculated from Beekman et al 1998 (Entomologia Experimentalis et Applicata 89: 207–214, 1998)
     # Fig. 1B: survival prob. is calculated from proportion of survivors to survivors + non-survivors. Using the relative weight rather than the absolute weight, we fitted a sigmoid curve (survivalProb) to the left site only,
     # as the low surv. prob. of heavy queens is an artefact of the treatment:
@@ -49,24 +48,24 @@ function winter_mortality_probibility(bees){
     # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
     # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
     
-    relative_weight = (bees.weight - bee.species.dev_weight_Q_pupation_min) / ( bee.species.dev_weight_Q_pupation_max - bee.species.dev_weight_Q_pupation_min )
+    relative_weight = (bee.weight - bee.species.dev_weight_Q_pupation_min) / ( bee.species.dev_weight_Q_pupation_max - bee.species.dev_weight_Q_pupation_min )
     survival_probibility = 0.64 / (1 + ℯ ^ (-22 * (relative_weight - 0.32))) # returns survival_probibility
 }
 
-function find_nesting_site(bees, model){
+function find_nesting_site(bee, model){
     # TODO: add a minimum nesting site area
     # TODO: randomly select a nest site out of possibilities
     for i ∈ 1:model.sizeof(land_type)[1], j ∈ 1:model.sizeof(land_type)[2]
-        if model.land_type[i,j] ∈ bee.species.nest_site_land_types && norm((i,j)-bees.pos) && any(flowers -> flowers.name ∈ bee.species.nest_site_food_sources && flowers.pollen_production[i,j] != 0, model.flowers)
+        if model.land_type[i,j] ∈ bee.species.nest_site_land_types && norm((i,j)-bee.pos) && any(flowers -> flowers.name ∈ bee.species.nest_site_food_sources && flowers.pollen_production[i,j] != 0, model.flowers)
             return (i,j)
         end
     end
 }
 
-function bees_step!(bees, model)
+function bee_step!(bee, model)
     # kill all bees that are not hibernating at the end of the season
-    if bees.species.season_stop == model.tick % 365 && bees.activity != :hibernate
-        kill_agent!(bees, model)
+    if bee.species.season_stop == model.tick % 365 && bee.activity != :hibernate
+        kill_agent!(bee, model)
     end
 
     # new queens emerge from hibernation and found new colonies (note: most queens will still be represented as cohorts here!) 
@@ -76,33 +75,29 @@ function bees_step!(bees, model)
     # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
     # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
     # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
-    if bees.emerging_date == model.tick
-        bees.activity = :emerging
-        # clone cohort based queens to become individuals
-        for _ ∈ 2:bees.number
-            add_agent!(Bees(1, bees.colony, bees.species, bees.type, bees.activity, bees.emerging_date, bees.weight), model)
-        end
-        bees.number = 1
+    if bee.emerging_date == model.tick
+        bee.activity = :emerging
     end
-    if bees.activity == :emerging
+    if bee.activity == :emerging
         # WINTER MORTALITY:
         # Queen has a risk of dying over winter:
-        if rand() < winter_mortality_probibility(bees)
-            kill_agent!(bees, model)
+        if rand() < winter_mortality_probibility(bee)
+            kill_agent!(bee, model)
         end
 
         # AFTER SURVIVAL:
-        bees.activity = :resting
-        bees.colony = nothing
+        bee.activity = :resting
+        bee.colony = nothing
     end
-    if bees.type == :queen && bees.colony === nothing && bees.activity != :hibernate
+    if bee.type == :queen && bee.colony === nothing && bee.activity != :hibernate
         # searching for nest
-        if rand() < bees.species.chanceFindNest
+        if rand() < bee.species.chanceFindNest
             # found nest
-            bees.colony = Colony(find_nesting_site(bees, model))
+            bee.colony = Colony(find_nesting_site(bee, model))
+            bee.activity = :resting
         else
             if rand() < 1 - ((1 - model.mortality_forager) ^ (model.nest_search_time))
-                kill_agent!(bees, model)
+                kill_agent!(bee, model)
             end
         end
     end
@@ -118,10 +113,10 @@ function world_step!(model)
     end
 
     # kill males in autumn if all queens are in hibernation and no brood is left
-    if !any(bees -> bees.type == :queen && bees.activity != :hibernate, model) && !any(bees -> bees.type == :egg || bees.type == :larva || bees.type == :pupa, model)
-        for bees ∈ model
-            if bees.type == :male
-                kill_agent!(bees, model)
+    if !any(bee -> bee.type == :queen && bee.activity != :hibernate, model) && !any(bee -> bee.type == :egg || bee.type == :larva || bee.type == :pupa, model)
+        for bee ∈ model
+            if bee.type == :male
+                kill_agent!(bee, model)
             end
         end
     end
@@ -160,7 +155,7 @@ function create_word(
         :mortality_forager => mortality_forager,
         :tick => 0,
     )
-    model = ABM(Bees, space ; properties)
+    model = ABM(Bee, space ; properties)
     return model
 end
 
