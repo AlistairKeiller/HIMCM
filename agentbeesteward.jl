@@ -11,7 +11,10 @@ struct Species
     nest_site_land_types::Vector{Symbol}
     dev_weight_Q_pupation_min::Float64 # g
     dev_weight_Q_pupation_max::Float64 # g
-    chanceFindNest::Float64
+    dev_weight_pupation_max::Float64 # g
+    chance_find_nest::Float64
+    growth_factor::Float64
+    pollen_to_bodymass_factor::Float64
 end
 
 mutable struct Flowers
@@ -76,6 +79,13 @@ function competition_point_date(colony, model)
     return min(Int(0.7 * (colony.queen_production_date - colony.eusocial_phase_date) + 15.5), 45) + colony.eusocial_phase_date
 end
 
+function max_weight_gain_today(bee, model)
+    if bee.caste == :queen
+        return min(bee.weight * bee.species.growth_factor, bee.species.dev_weight_Q_pupation_max) - bee.weight
+    end
+    return min(bee.weight * bee.species.growth_factor, bee.species.dev_weight_pupation_max) - bee.weight
+end
+
 function bee_step!(bee, model)
     # kill all bees that are not hibernating at the end of the season
     if bee.species.season_stop == model.ticks % 365 && bee.activity != :hibernate
@@ -105,7 +115,7 @@ function bee_step!(bee, model)
     end
     if bee.caste == :queen && bee.colony === nothing && bee.activity != :hibernate
         # searching for nest
-        if rand() < bee.species.chanceFindNest
+        if rand() < bee.species.chance_find_nest
             # found nest
             new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, ∞, ∞, 873, 0)
             bee.colony = new_colony
@@ -152,7 +162,7 @@ function world_step!(model)
         end
 
         # kill a colony if it has no energy or if it has no adult bees
-        if colony.energy_store <= 0 || ( !any(bee -> bee.colony === colony && (bee.caste == :male || bee.caste == :worker || bee.caste == :queen), model) )
+        if colony.energy_store <= 0 || (!any(bee -> bee.colony === colony && (bee.caste == :male || bee.caste == :worker || bee.caste == :queen), model))
             for bee ∈ model
                 if bee.colony === colony
                     kill_agent!(bee, model)
@@ -179,7 +189,7 @@ function world_step!(model)
         colony.energy_need = 0
         for bee ∈ model
             if bee.colony === colony && bee.type == :larva
-                energy_need += 
+                energy_need += max_weight_gain_today(bee, model) * bee.species.pollen_to_bodymass_factor * 6200 # Hrassnig, Crailsheim 2005 (honeybee larvae): consumes ca. 156.25 mg pollen (125-187.5 mg, Tab 1.) and 59.4 mg carbohydrates (Tab. 1, from Rortais et al 2005). Energy carbohydrates ca. 16.3 kJ/g (3.89kcal/g * 4.19 = 16.3 kJ/g (http://ndb.nal.usda.gov)), hence: energy from carbohydrates = 59.4mg * 16.3 kJ/g = 968.22 kJ to assimilate 156.25 mg pollen or 6.1966 kJ for 1 mg pollen
             end
         end
     end
