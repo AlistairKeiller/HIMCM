@@ -9,8 +9,8 @@ struct Species
     season_stop::Int
     nest_site_food_sources::Vector{Symbol}
     nest_site_land_types::Vector{Symbol}
-    dev_weight_Q_pupation_min::Float64 # mg
-    dev_weight_Q_pupation_max::Float64 # mg
+    dev_weight_Q_pupation_min::Float64 # g
+    dev_weight_Q_pupation_max::Float64 # g
     chanceFindNest::Float64
 end
 
@@ -34,15 +34,17 @@ mutable struct Colony
     switch_point_date::Int # the date when the colony switches from a diploid to a haploid phase
     competition_point_date::Int # the date of a colonies' competition point
     energy_store::Float64 # J
+    energy_need::Float64 # J
 end
 
 @agent Bee GridAgent{2} begin
     colony::Union{Colony,Nothing}
     species::Species
-    type::Symbol # egg, larva, pupa, male, worker, queen
+    caste::Symbol # undefined, queen, worker, male
+    stage::Symbol # egg, larva, pupa, adult
     activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
     emerging_date::Int
-    weight::Float64 # mg
+    weight::Float64 # g
     age::Int # days
 end
 
@@ -101,11 +103,11 @@ function bee_step!(bee, model)
         bee.activity = :resting
         bee.colony = nothing
     end
-    if bee.type == :queen && bee.colony === nothing && bee.activity != :hibernate
+    if bee.caste == :queen && bee.colony === nothing && bee.activity != :hibernate
         # searching for nest
         if rand() < bee.species.chanceFindNest
             # found nest
-            new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, ∞, ∞, 873)
+            new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, ∞, ∞, 873, 0)
             bee.colony = new_colony
             append!(model.colonies, new_colony)
             bee.activity = :resting
@@ -131,35 +133,26 @@ function world_step!(model)
     end
 
     # kill males in autumn if all queens are in hibernation and no brood is left
-    if !any(bee -> bee.type == :queen && bee.activity != :hibernate, model) && !any(bee -> bee.type == :egg || bee.type == :larva || bee.type == :pupa, model)
+    if !any(bee -> bee.caste == :queen && bee.activity != :hibernate, model) && !any(bee -> bee.stage == :egg || bee.stage == :larva || bee.stage == :pupa, model)
         for bee ∈ model
-            if bee.type == :male
+            if bee.caste == :male
                 kill_agent!(bee, model)
             end
         end
     end
 
     for colony ∈ model.colonies
-        # determine competition point date
-        if model.ticks > colony.competition_point_date && !any(bee -> bee.colony === colony && (bee.type == :egg || bee.type == :larvae || bee.type == :pupea, model)) # death of colony after competition point
+        # death of colony after competition point
+        if model.ticks > colony.competition_point_date && !any(bee -> bee.colony === colony && (bee.stage == :egg || bee.stage == :larvae || bee.stage == :pupea, model))
             for bee ∈ model
-                if bee.colony === colony && bee.age > 10 && (bee.type == :worker || bee.type == :queen)
+                if bee.colony === colony && bee.age > 10 && (bee.caste == :worker || bee.caste == :queen)
                     kill_agent!(bee, model)
                 end
             end
         end
 
-        # kill a colony if it has no energy
-        if colony.energy_store <= 0
-            for bee ∈ model
-                if bee.colony === colony
-                    kill_agent!(bee, model)
-                end
-            end
-        end
-
-        # kill a colony if it has no adult bees
-        if !any(bee -> bee.colony === colony && (bee.type == :male || bee.type == :worker || bee.type == :queen), model)
+        # kill a colony if it has no energy or if it has no adult bees
+        if colony.energy_store <= 0 || ( !any(bee -> bee.colony === colony && (bee.caste == :male || bee.caste == :worker || bee.caste == :queen), model) )
             for bee ∈ model
                 if bee.colony === colony
                     kill_agent!(bee, model)
@@ -168,18 +161,26 @@ function world_step!(model)
         end
 
         # determine eusocial phase (starts with emergence of first worker):
-        if colony.eusocial_phase_date == ∞ && any(bee -> bee.colony === colony && bee.type == :worker, model)
+        if colony.eusocial_phase_date == ∞ && any(bee -> bee.colony === colony && bee.caste == :worker, model)
             colony.eusocial_phase_date = model.ticks
         end
 
         # determine the switch point date
-        if colony.switch_point_date == ∞ && eusocial_phase_date != ∞ && count(bee -> bee.colony === colony && bee.type == :larva) / count(bee -> bee.colony === colony && bee.type == :worker) > 3 && rand() > 0.13 # derived from Duchateau & Velthuis 1988 (50% of the (early switching) colonies switch within ca. 2*2.4d, i.e. 13% per day)
+        if colony.switch_point_date == ∞ && eusocial_phase_date != ∞ && count(bee -> bee.colony === colony && bee.stage == :larva) / count(bee -> bee.colony === colony && bee.caste == :worker) > 3 && rand() > 0.13 # derived from Duchateau & Velthuis 1988 (50% of the (early switching) colonies switch within ca. 2*2.4d, i.e. 13% per day)
             colony.switch_point_date = model.ticks
         end
 
         # determine the competition point date
         if model.competition_point_date == ∞ && eusocial_phase_date != ∞ && queen_production_date != ∞
             colony.competition_point_date = competition_point_date(colony, model)
+        end
+
+        # TODO: might be able to move into bee_step!
+        colony.energy_need = 0
+        for bee ∈ model
+            if bee.colony === colony && bee.type == :larva
+                energy_need += 
+            end
         end
     end
 
@@ -206,7 +207,7 @@ function create_word(
     forging_time::Int=8 * 60 * 60, # seconds per day
     nest_search_time::Int=6 * 60 * 60, # seconds
     mortality_forager::Float=1.0e-5, # seconds^-1
-    colonies::Vector{Colony}=[Colony((50, 50))],
+    colonies::Vector{Colony}=[],
 )
     space = GridSpace(sizeof(land_type))
     properties = Dict(
