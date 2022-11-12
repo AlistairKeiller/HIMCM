@@ -29,6 +29,8 @@ end
 
 mutable struct Colony
     position::Tuple{Int,Int}
+    queen_production_date::Int # the first date when diploid larvae eggs were laid that can develop into queens
+    eusocial_phase_date::Int # emergence of the the first worker (Duchateau & Velthuis 1988)
 end
 
 @agent Bee GridAgent{2} begin
@@ -38,6 +40,7 @@ end
     activity::Symbol # hibernate, nestConstruction, emerging, resting, searching, returningEmpty, returningUnhappyN, returningUnhappyP, nectarForaging, collectNectar, bringingNectar, expForagingN, pollenForaging, collectPollen, bringingPollen, expForagingP, egglaying, nursing
     emerging_date::Int
     weight::Float64 # mg
+    age::Int # days
 end
 
 function winter_mortality_probibility(bee){
@@ -52,7 +55,7 @@ function winter_mortality_probibility(bee){
     survival_probibility = 0.64 / (1 + ℯ ^ (-22 * (relative_weight - 0.32))) # returns survival_probibility
 }
 
-function find_nesting_site(bee, model){
+function find_nesting_site(bee, model)
     # TODO: add a minimum nesting site area
     # TODO: randomly select a nest site out of possibilities
     for i ∈ 1:model.sizeof(land_type)[1], j ∈ 1:model.sizeof(land_type)[2]
@@ -60,11 +63,17 @@ function find_nesting_site(bee, model){
             return (i,j)
         end
     end
-}
+end
+
+function competition_point_date(colony, model)
+    # determines the date of a colonies' competition point
+    # from Duchateau & Velthuis 1988, Fig. 6
+    return min(Int(0.7 * (colony.queen_production_date - colony.eusocial_phase_date) + 15.5), 45) + colony.eusocial_phase_date
+end
 
 function bee_step!(bee, model)
     # kill all bees that are not hibernating at the end of the season
-    if bee.species.season_stop == model.tick % 365 && bee.activity != :hibernate
+    if bee.species.season_stop == model.ticks % 365 && bee.activity != :hibernate
         kill_agent!(bee, model)
     end
 
@@ -75,7 +84,7 @@ function bee_step!(bee, model)
     # "One would expect that queens with the highest weight will survive diapause. It is therefore surprising that the initial weight distribution of dead queens exceeds that of the surviving queens (Figure 1B and 1C).
     # However, in 1993 the average initial weight of the queens was highest and in this period the most severe diapause regimes (6 or 8 months) were started. Since the majority of the queens that were given a treatment
     # with a length of 6 or 8 months died, the initial weight distribution of dead queens exceeds that of the surviving queens."
-    if bee.emerging_date == model.tick
+    if bee.emerging_date == model.ticks
         bee.activity = :emerging
     end
     if bee.activity == :emerging
@@ -101,12 +110,16 @@ function bee_step!(bee, model)
             end
         end
     end
+
+    personal_time = rand(1:1800)
+    activityList = []
+    
 end
 
 function world_step!(model)
     # update food in tiles
     for flowers ∈ model.flowers
-        if model.tick % 365 ∈ flowers.season
+        if model.ticks % 365 ∈ flowers.season
             flowers.pollen_quantities += flower.pollen_production
             flowers.nectar_quantities += flower.nectar_production
         end
@@ -121,7 +134,18 @@ function world_step!(model)
         end
     end
 
-    model.tick += 1
+    for colony ∈ model.colonies
+        # determine competition point date
+        if model.ticks > competition_point_date(colony, model) && !any(bee -> bee.type == :egg || bee.type == :larvae || bee.type == :pupea) # death of colony after competition point
+            for bee ∈ model
+                if bee.colony === colony && bee.age > 10 && (bee.type == :worker || bee.type == :queen)
+                    kill_agent!(bee, model)
+                end
+            end
+        end
+    end
+
+    model.ticks += 1
 end
 
 function create_word(
@@ -143,7 +167,8 @@ function create_word(
     tile_size::Float64=1.0, # m
     forging_time::Int=8 * 60 * 60, # seconds per day
     nest_search_time::Int=6 * 60 * 60, # seconds
-    mortality_forager::Float=1.0e-5
+    mortality_forager::Float=1.0e-5, # seconds^-1
+    colonies::Vector{Colony}=[Colony((50,50))],
 )
     space = GridSpace(sizeof(land_type))
     properties = Dict(
@@ -153,7 +178,8 @@ function create_word(
         :forging_time => forging_time,
         :nest_search_time => nest_search_time,
         :mortality_forager => mortality_forager,
-        :tick => 0,
+        :colonies => colonies,
+        :ticks => 0,
     )
     model = ABM(Bee, space ; properties)
     return model
