@@ -117,7 +117,7 @@ function bee_step!(bee, model)
         # searching for nest
         if rand() < bee.species.chance_find_nest
             # found nest
-            new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, ∞, ∞, 873, 0)
+            new_colony = Colony(find_nesting_site(bee, model), typemax(Int), typemax(Int), typemax(Int), typemax(Int), 873, 0)
             bee.colony = new_colony
             append!(model.colonies, new_colony)
             bee.activity = :resting
@@ -171,17 +171,17 @@ function world_step!(model)
         end
 
         # determine eusocial phase (starts with emergence of first worker):
-        if colony.eusocial_phase_date == ∞ && any(bee -> bee.colony === colony && bee.caste == :worker, model)
+        if colony.eusocial_phase_date == typemax(Int) && any(bee -> bee.colony === colony && bee.caste == :worker, model)
             colony.eusocial_phase_date = model.ticks
         end
 
         # determine the switch point date
-        if colony.switch_point_date == ∞ && eusocial_phase_date != ∞ && count(bee -> bee.colony === colony && bee.stage == :larva) / count(bee -> bee.colony === colony && bee.caste == :worker) > 3 && rand() > 0.13 # derived from Duchateau & Velthuis 1988 (50% of the (early switching) colonies switch within ca. 2*2.4d, i.e. 13% per day)
+        if colony.switch_point_date == typemax(Int) && eusocial_phase_date != typemax(Int) && count(bee -> bee.colony === colony && bee.stage == :larva) / count(bee -> bee.colony === colony && bee.caste == :worker) > 3 && rand() > 0.13 # derived from Duchateau & Velthuis 1988 (50% of the (early switching) colonies switch within ca. 2*2.4d, i.e. 13% per day)
             colony.switch_point_date = model.ticks
         end
 
         # determine the competition point date
-        if model.competition_point_date == ∞ && eusocial_phase_date != ∞ && queen_production_date != ∞
+        if model.competition_point_date == typemax(Int) && eusocial_phase_date != typemax(Int) && queen_production_date != typemax(Int)
             colony.competition_point_date = competition_point_date(colony, model)
         end
 
@@ -216,10 +216,10 @@ function create_word(
     tile_size::Float64=1.0, # m
     forging_time::Int=8 * 60 * 60, # seconds per day
     nest_search_time::Int=6 * 60 * 60, # seconds
-    mortality_forager::Float=1.0e-5, # seconds^-1
-    colonies::Vector{Colony}=[],
+    mortality_forager::Float64=1.0e-5, # seconds^-1
+    colonies::Vector{Colony}=[Colony((0, 0), typemax(Int), typemax(Int), typemax(Int), typemax(Int), 873, 0)],
 )
-    space = GridSpace(sizeof(land_type))
+    space = GridSpace(size(land_type))
     properties = Dict(
         :flowers => flowers,
         :land_type => land_type,
