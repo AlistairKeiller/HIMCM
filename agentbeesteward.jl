@@ -31,6 +31,8 @@ mutable struct Colony
     position::Tuple{Int,Int}
     queen_production_date::Int # the first date when diploid larvae eggs were laid that can develop into queens
     eusocial_phase_date::Int # emergence of the the first worker (Duchateau & Velthuis 1988)
+    switch_point_date::Int # the date when the colony switches from a diploid to a haploid phase
+    competition_point_date::Int # the date of a colonies' competition point
     energy_store::Float64 # J
 end
 
@@ -103,7 +105,7 @@ function winter_mortality_probibility(bee){
             # searching for nest
             if rand() < bee.species.chanceFindNest
                 # found nest
-                new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, 0) # TODO: update this to have accurate values
+                new_colony = Colony(find_nesting_site(bee, model), ∞, ∞, ∞, ∞, 873)
                 bee.colony = new_colony
                 append!(model.colonies, new_colony)
                 bee.activity = :resting
@@ -139,7 +141,7 @@ function winter_mortality_probibility(bee){
 
         for colony ∈ model.colonies
             # determine competition point date
-            if model.ticks > competition_point_date(colony, model) && !any(bee -> bee.colony === colony && (bee.type == :egg || bee.type == :larvae || bee.type == :pupea, model)) # death of colony after competition point
+            if model.ticks > colony.competition_point_date && !any(bee -> bee.colony === colony && (bee.type == :egg || bee.type == :larvae || bee.type == :pupea, model)) # death of colony after competition point
                 for bee ∈ model
                     if bee.colony === colony && bee.age > 10 && (bee.type == :worker || bee.type == :queen)
                         kill_agent!(bee, model)
@@ -169,6 +171,16 @@ function winter_mortality_probibility(bee){
             if colony.eusocial_phase_date == ∞ && any(bee -> bee.colony === colony && bee.type == :worker, model)
                 colony.eusocial_phase_date = model.ticks
             end
+
+            if colony.switch_point_date == ∞ && eusocial_phase_date != ∞ && count(bee -> bee.colony === colony && bee.type == :larva) / count(bee -> bee.colony === colony && bee.type == :worker) > 3 && rand() > 0.13 # derived from Duchateau & Velthuis 1988 (50% of the (early switching) colonies switch within ca. 2*2.4d, i.e. 13% per day)
+                colony.switch_point_date = model.ticks
+            end
+
+            if model.competition_point_date == ∞ && eusocial_phase_date != ∞ && queen_production_date != ∞
+                colony.competition_point_date = competition_point_date(colony, model)
+            end
+
+
         end
     end
 
