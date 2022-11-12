@@ -15,6 +15,8 @@ struct Species
     chance_find_nest::Float64
     growth_factor::Float64
     pollen_to_bodymass_factor::Float64
+    min_pollen_store::Float64 # g
+    dev_quota_incubation_today::Float64 # J
 end
 
 mutable struct Flowers
@@ -37,7 +39,10 @@ mutable struct Colony
     switch_point_date::Int # the date when the colony switches from a diploid to a haploid phase
     competition_point_date::Int # the date of a colonies' competition point
     energy_store::Float64 # J
-    energy_need::Float64 # J
+    pollen_store::Float64 # g
+    energy_need_today::Float64 # J
+    pollen_need_larvae_today::Float64 # g
+    summed_incubation_today::Float64 # J
 end
 
 @agent Bee GridAgent{2} begin
@@ -49,6 +54,10 @@ end
     emerging_date::Int
     weight::Float64 # g
     age::Int # days
+    th_egg_laying::Float64
+    th_nursing::Float64
+    th_foraging_pollen::Float64
+    th_foraging_nectar::Float64
 end
 
 function winter_mortality_probibility(bee)
@@ -84,6 +93,19 @@ function max_weight_gain_today(bee, model)
         return min(bee.weight * bee.species.growth_factor, bee.species.dev_weight_Q_pupation_max) - bee.weight
     end
     return min(bee.weight * bee.species.growth_factor, bee.species.dev_weight_pupation_max) - bee.weight
+end
+
+function stim_egg_laying(bee, model)
+    return (bee.colony.pollen_store > bee.species.min_pollen_store && !any(other_bee -> other_bee.colony == bee.colony && (bee.stage == :egg || bee.stage == :larva)) || any(other_bee -> otherbee.colony == bee.colony && other_bee.stage == :adult)) ? 1 : 0
+end
+
+function stim_nursing(bee, model)
+    return (bee.species.dev_quota_incubation_today * count(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == pupa), model) > bee.colony.summed_incubation_today) ? 1 : 0
+end
+
+function stim_foraging_pollen(bee, model, personal_time)
+    ideal_pollen_store = bee.colony.pollen_need_larvae_today * 5 + bee.colony.min_pollen_store
+    return (ideal_pollen_store - bee.colony.pollen_store) / ideal_pollen_store > 0.005 && personal_time ∈ model.forging_period ? 1 : 0 # heuristically determined
 end
 
 function bee_step!(bee, model)
@@ -128,9 +150,25 @@ function bee_step!(bee, model)
         end
     end
 
-    personal_time = rand(1:1800)
-    activityList = []
+    # have bee work if the bee is able to work
+    if (bee.caste == :worker || bee.caste == :queen) && bee.activty != :hibernate && bee.state == :adult
+        personal_time = rand(1:1800)
 
+        while personal_time < 24 * 60 * 60
+            bee.activty = :resting
+            if bee.colony !== nothing
+                if stim_egg_laying(bee, model) > bee.th_egg_laying
+                    bee.activity = :egg_laying
+                end
+                if stim_nursing(bee, model) > bee.th_nursing
+                    bee.activty = :nursing
+                end
+                if stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
+                    bee.activity = :foraging_pollen
+                end
+            end
+        end
+    end
 end
 
 function world_step!(model)
@@ -185,11 +223,11 @@ function world_step!(model)
             colony.competition_point_date = competition_point_date(colony, model)
         end
 
-        # TODO: might be able to move into bee_step!
-        colony.energy_need = 0
+        # calculate the amount of pollen the colony needs for the day
+        colony.pollen_need_larvae_today = 0
         for bee ∈ model
             if bee.colony === colony && bee.type == :larva
-                colony.energy_need += max_weight_gain_today(bee, model) * bee.species.pollen_to_bodymass_factor * 6200 # Hrassnig, Crailsheim 2005 (honeybee larvae): consumes ca. 156.25 mg pollen (125-187.5 mg, Tab 1.) and 59.4 mg carbohydrates (Tab. 1, from Rortais et al 2005). Energy carbohydrates ca. 16.3 kJ/g (3.89kcal/g * 4.19 = 16.3 kJ/g (http://ndb.nal.usda.gov)), hence: energy from carbohydrates = 59.4mg * 16.3 kJ/g = 968.22 kJ to assimilate 156.25 mg pollen or 6.1966 kJ for 1 mg pollen
+                colony.pollen_need_larvae_today += max_weight_gain_today(bee, model) * bee.species.pollen_to_bodymass_factor
             end
         end
     end
@@ -214,9 +252,10 @@ function create_word(
     ],
     land_type::Array{Symbol,2}=fill(:grass_land, 100, 100),
     tile_size::Float64=1.0, # m
-    forging_time::Int=8 * 60 * 60, # seconds per day
+    forging_period::UnitRange{Int}=8*60*60:16*60*60, # seconds per day
     nest_search_time::Int=6 * 60 * 60, # seconds
     mortality_forager::Float64=1.0e-5, # seconds^-1
+    energy_required_for_pollen_assimilation::Float64=6200.0, # J/g Hrassnig, Crailsheim 2005 (honeybee larvae): consumes ca. 156.25 mg pollen (125-187.5 mg, Tab 1.) and 59.4 mg carbohydrates (Tab. 1, from Rortais et al 2005).
     colonies::Vector{Colony}=[Colony((0, 0), typemax(Int), typemax(Int), typemax(Int), typemax(Int), 873, 0)],
 )
     space = GridSpace(size(land_type))
@@ -224,9 +263,10 @@ function create_word(
         :flowers => flowers,
         :land_type => land_type,
         :tile_size => tile_size,
-        :forging_time => forging_time,
+        :forging_period => forging_period,
         :nest_search_time => nest_search_time,
         :mortality_forager => mortality_forager,
+        :energy_required_for_pollen_assimilation => energy_required_for_pollen_assimilation,
         :colonies => colonies,
         :ticks => 0,
     )
