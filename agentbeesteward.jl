@@ -170,7 +170,7 @@ function bee_step!(bee, model)
 
     # have bee work if the bee is able to work
     if (bee.caste == :worker || bee.caste == :queen) && bee.activty != :hibernate && bee.state == :adult && bee.colony !== nothing
-        personal_time = rand(1:1800)
+        personal_time = 0
 
         while personal_time < 24 * 60 * 60
             # find which activity
