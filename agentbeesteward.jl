@@ -118,6 +118,10 @@ function stim_foraging_nectar(bee, model, personal_time)
     return (ideal_energy_store - bee.colony.energy_store) / ideal_energy_store > 0.005 && personal_time ∈ model.forging_period ? 1 : 0 # heuristically determined
 end
 
+function foraging_searching(bee, model)
+
+end
+
 function bee_step!(bee, model)
     # kill all bees that are not hibernating at the end of the season
     if bee.species.season_stop == model.ticks % 365 && bee.activity != :hibernate
@@ -176,24 +180,27 @@ function bee_step!(bee, model)
 
         while personal_time < 24 * 60 * 60
             # find which activity
-            bee.activty = :resting
-            if stim_egg_laying(bee, model) > bee.th_egg_laying
-                bee.activity = :egg_laying
-            end
-            if stim_nursing(bee, model) > bee.th_nursing
-                bee.activty = :nursing
-            end
-            if stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
-                bee.activity = :foraging_pollen
-            end
             if stim_foraging_nectar(bee, model, personal_time) > bee.th_foraging_nectar
                 bee.activity = :foraging_nectar
-            end
+            elseif stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
+                bee.activity = :foraging_pollen
+            elseif stim_nursing(bee, model) > bee.th_nursing
+                bee.activty = :nursing
 
-            # do that activity
-            if bee.activity == :resting
-                personal_time += 0.5 * 60 * 60
-            elseif bee.activity == :egg_laying
+                # (2880s = 48 min) time spent on incubation - ca. 48 min. between foraging flights of incubating queen, Heinrich, p. 92, Fig. 5.2
+                heat_provided = 2880 * 0.000000217013888 * bee.weight
+                heat_provided_per_brood = any(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) ? heat_provided / count(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) : 0
+                for other_bee in model
+                    if other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa)
+                        other_bee.cumul_incubation_received += heat_provided_per_brood
+                    end
+                end
+                bee.colony.summed_incubation_today += heat_provided
+                bee.energy_store -= heat_provided
+                personal_time += 2880
+            elseif stim_egg_laying(bee, model) > bee.th_egg_laying
+                bee.activity = :egg_laying
+
                 pollen_cost = bee.species.egg_weight * bee.species.pollen_to_bodymass_factor
                 energy_cost = pollen_cost * model.energy_required_for_pollen_assimilation
                 if bee.colony.pollen_store > pollen_cost && bee.colony.energy_store > energy_cost
@@ -224,21 +231,10 @@ function bee_step!(bee, model)
                 bee.colony.pollen_store -= pollen_cost
                 bee.colony.energy_store -= energy_cost
                 personal_time += 24 * 60 * 60
-            elseif bee.activity == :nursing
-                # (2880s = 48 min) time spent on incubation - ca. 48 min. between foraging flights of incubating queen, Heinrich, p. 92, Fig. 5.2
-                heat_provided = 2880 * 0.000000217013888 * bee.weight
-                heat_provided_per_brood = any(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) ? heat_provided / count(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) : 0
-                for other_bee in model
-                    if other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa)
-                        other_bee.cumul_incubation_received += heat_provided_per_brood
-                    end
-                end
-                bee.colony.summed_incubation_today += heat_provided
-                bee.energy_store -= heat_provided
-                personal_time += 2880
-            elseif bee.activity == :foraging_pollen
+            else
+                bee.activty = :resting
 
-            elseif bee.activity == :foraging_nectar
+                personal_time += 0.5 * 60 * 60
             end
         end
     end
@@ -249,7 +245,9 @@ function bee_step!(bee, model)
 
     # young queens leave the colony, mate and hibernate
     if bee.stage == :adult && bee.cast == :queen && !bee.mated && bee.colony !== nothing
+        # searching for another mate
         if any(other_bee -> other_bee.caste == :make && other_bee.stage == :adult && other_bee.species === bee.species, model)
+            # checking if same species
             bee.spermatheca = rand(filter(other_bee -> other_bee.caste == :make && other_bee.stage == :adult && other_bee.species === bee.species, model)).alleles
             bee.mated = true
             bee.th_egg_laying = 0.1
@@ -330,7 +328,7 @@ function world_step!(model)
     model.ticks += 1
 end
 
-function create_word(
+function create_world(
     flowers::Vector{Flowers}=[
         Flowers(
             :dandelion,
@@ -369,4 +367,4 @@ function create_word(
     return model
 end
 
-create_word()
+create_world()
