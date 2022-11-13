@@ -40,7 +40,6 @@ mutable struct Colony
     competition_point_date::Int # the date of a colonies' competition point
     energy_store::Float64 # J
     pollen_store::Float64 # g
-    energy_need_today::Float64 # J
     pollen_need_larvae_today::Float64 # g
     summed_incubation_today::Float64 # J
 end
@@ -108,6 +107,11 @@ function stim_foraging_pollen(bee, model, personal_time)
     return (ideal_pollen_store - bee.colony.pollen_store) / ideal_pollen_store > 0.005 && personal_time ∈ model.forging_period ? 1 : 0 # heuristically determined
 end
 
+function stim_foraging_nectar(bee, model, personal_time)
+    ideal_energy_store = 6 * bee.colony.pollen_need_larvae_today * model.energy_required_for_pollen_assimilation * 5 + 20
+    return (ideal_energy_store - bee.colony.energy_store) / ideal_energy_store > 0.005 && personal_time ∈ model.forging_period ? 1 : 0 # heuristically determined
+end
+
 function bee_step!(bee, model)
     # kill all bees that are not hibernating at the end of the season
     if bee.species.season_stop == model.ticks % 365 && bee.activity != :hibernate
@@ -166,6 +170,11 @@ function bee_step!(bee, model)
                 if stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
                     bee.activity = :foraging_pollen
                 end
+                if stim_foraging_nectar(bee, model, personal_time) > bee.th_foraging_nectar
+                    bee.activity = :foraging_nectar
+                end
+            else
+                bee.personal_time = 24 * 60 * 60
             end
         end
     end
