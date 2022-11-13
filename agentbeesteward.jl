@@ -195,7 +195,9 @@ function bee_step!(bee, model)
                 pollen_cost = bee.species.egg_weight * bee.species.pollen_to_bodymass_factor
                 energy_cost = pollen_cost * model.energy_required_for_pollen_assimilation
                 if bee.colony.pollen_store > pollen_cost && bee.colony.energy_store > energy_cost
-                    add_agent!(Bee(
+                    add_agent!(
+                        Bee,
+                        model,
                         bee.colony,
                         bee.species,
                         :undefined,
@@ -210,7 +212,7 @@ function bee_step!(bee, model)
                         typemax(Int),
                         Vector{Int}(),
                         [rand(bee.alleles)]
-                    ))
+                    )
                 end
                 bee.colony.pollen_store -= pollen_cost
                 bee.colony.energy_store -= energy_cost
