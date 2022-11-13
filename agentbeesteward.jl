@@ -59,8 +59,8 @@ end
     th_foraging_pollen::Float64
     th_foraging_nectar::Float64
     mated::Bool
-    spermatheca::Vector{Int}
-    alleles::Vector{Int}
+    spermatheca::Vector{Float64}
+    alleles::Vector{Float64}
 end
 
 function winter_mortality_probibility(bee)
@@ -195,12 +195,17 @@ function bee_step!(bee, model)
                 pollen_cost = bee.species.egg_weight * bee.species.pollen_to_bodymass_factor
                 energy_cost = pollen_cost * model.energy_required_for_pollen_assimilation
                 if bee.colony.pollen_store > pollen_cost && bee.colony.energy_store > energy_cost
+                    egg_type = (bee.cast == :queen && model.ticks <= bee.colony.switch_point_date) ? :haploid : :diploid
+                    alleles = [rand(bee.alleles) if egg_type == :haploid
+                        rand(bee.spermatheca)
+                    end]
                     add_agent!(
                         Bee,
                         model,
+                        (),
                         bee.colony,
                         bee.species,
-                        :undefined,
+                        egg_type == :haploid || alleles[1] == alleles[2] ? :male : :undefined,
                         :egg,
                         :resting,
                         typemax(Int),
@@ -211,7 +216,7 @@ function bee_step!(bee, model)
                         typemax(Int),
                         typemax(Int),
                         Vector{Int}(),
-                        [rand(bee.alleles)]
+                        alleles
                     )
                 end
                 bee.colony.pollen_store -= pollen_cost
