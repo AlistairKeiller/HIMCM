@@ -178,6 +178,12 @@ function bee_step!(bee, model)
             end
         end
     end
+
+    if bee.stage == :adult && bee.activity != :hibernate && be.caste != :male
+        bee.activity = :resting
+    end
+
+
 end
 
 function world_step!(model)
