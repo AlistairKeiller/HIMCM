@@ -158,26 +158,32 @@ function bee_step!(bee, model)
     end
 
     # have bee work if the bee is able to work
-    if (bee.caste == :worker || bee.caste == :queen) && bee.activty != :hibernate && bee.state == :adult
+    if (bee.caste == :worker || bee.caste == :queen) && bee.activty != :hibernate && bee.state == :adult && bee.colony !== nothing
         personal_time = rand(1:1800)
 
         while personal_time < 24 * 60 * 60
+            # find which activity
             bee.activty = :resting
-            if bee.colony !== nothing
-                if stim_egg_laying(bee, model) > bee.th_egg_laying
-                    bee.activity = :egg_laying
-                end
-                if stim_nursing(bee, model) > bee.th_nursing
-                    bee.activty = :nursing
-                end
-                if stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
-                    bee.activity = :foraging_pollen
-                end
-                if stim_foraging_nectar(bee, model, personal_time) > bee.th_foraging_nectar
-                    bee.activity = :foraging_nectar
-                end
-            else
-                bee.personal_time = 24 * 60 * 60
+            if stim_egg_laying(bee, model) > bee.th_egg_laying
+                bee.activity = :egg_laying
+            end
+            if stim_nursing(bee, model) > bee.th_nursing
+                bee.activty = :nursing
+            end
+            if stim_foraging_pollen(bee, model, personal_time) > bee.th_foraging_pollen
+                bee.activity = :foraging_pollen
+            end
+            if stim_foraging_nectar(bee, model, personal_time) > bee.th_foraging_nectar
+                bee.activity = :foraging_nectar
+            end
+
+            # do that activity
+            if bee.activity == :resting
+                bee.personal_time += 0.5 * 60 * 60
+            elseif bee.activity == :egg_laying
+            elseif bee.activity == :nursing
+            elseif bee.activity == :foraging_pollen
+            elseif bee.activity == :foraging_nectar
             end
         end
     end
@@ -201,6 +207,8 @@ function bee_step!(bee, model)
             kill_agent!(bee, model)
         end
     end
+
+
 end
 
 function world_step!(model)
