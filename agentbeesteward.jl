@@ -57,6 +57,9 @@ end
     th_nursing::Float64
     th_foraging_pollen::Float64
     th_foraging_nectar::Float64
+    mated::Bool
+    spermatheca::Vector{Int}
+    alleles::Vector{Int}
 end
 
 function winter_mortality_probibility(bee)
@@ -183,7 +186,21 @@ function bee_step!(bee, model)
         bee.activity = :resting
     end
 
-
+    # young queens leave the colony, mate and hibernate
+    if bee.stage == :adult && bee.cast == :queen && !bee.mated && bee.colony !== nothing
+        if any(other_bee -> other_bee.caste == :make && other_bee.stage == :adult && other_bee.species === bee.species, model)
+            bee.spermatheca = rand(filter(other_bee -> other_bee.caste == :make && other_bee.stage == :adult && other_bee.species === bee.species, model)).alleles
+            bee.mated = true
+            bee.th_egg_laying = 0.1
+            bee.activity = :hibernate
+            bee.colony = nothing
+            if length(bee.spermatheca) == 2 # mating with diploid male
+                kill_agent!(bee, model)
+            end
+        else
+            kill_agent!(bee, model)
+        end
+    end
 end
 
 function world_step!(model)
