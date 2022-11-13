@@ -62,6 +62,7 @@ end
     spermatheca::Vector{Float64}
     alleles::Vector{Float64}
     cumul_incubation_received::FLoat64 # J
+    pollensourceToGoTo::Tuple{Int,Int}
 end
 
 function winter_mortality_probibility(bee)
@@ -236,6 +237,7 @@ function bee_step!(bee, model)
                 bee.energy_store -= heat_provided
                 personal_time += 2880
             elseif bee.activity == :foraging_pollen
+
             elseif bee.activity == :foraging_nectar
             end
         end
