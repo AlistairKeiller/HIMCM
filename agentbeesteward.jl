@@ -202,7 +202,7 @@ function bee_step!(bee, model)
                     add_agent!(
                         Bee,
                         model,
-                        (),
+                        bee.colony.position,
                         bee.colony,
                         bee.species,
                         egg_type == :haploid || alleles[1] == alleles[2] ? :male : :undefined,
