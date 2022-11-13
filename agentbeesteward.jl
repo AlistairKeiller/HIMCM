@@ -78,10 +78,9 @@ function winter_mortality_probibility(bee)
 end
 
 function find_nesting_site(bee, model)
-    # TODO: add a minimum nesting site area
     # TODO: randomly select a nest site out of possibilities
     for i ∈ 1:model.sizeof(land_type)[1], j ∈ 1:model.sizeof(land_type)[2]
-        if model.land_type[i, j] ∈ bee.species.nest_site_land_types && norm((i, j) - bee.pos) && any(flowers -> flowers.name ∈ bee.species.nest_site_food_sources && flowers.pollen_production[i, j] != 0, model.flowers)
+        if model.land_type[i, j] ∈ bee.species.nest_site_land_types && norm((i, j) - bee.pos) < sqrt(model.area_sqm / π) && any(flowers -> flowers.name ∈ bee.species.nest_site_food_sources && flowers.pollen_production[i, j] != 0, model.flowers)
             return (i, j)
         end
     end
@@ -119,7 +118,11 @@ function stim_foraging_nectar(bee, model, personal_time)
 end
 
 function foraging_searching(bee, model)
-
+    for i ∈ 1:model.sizeof(land_type)[1], j ∈ 1:model.sizeof(land_type)[2]
+        if model.land_type[i, j] ∈ bee.species.foraging_land_types && norm((i, j) - bee.pos) && any(flowers -> flowers.name ∈ bee.species.foraging_food_sources && flowers.pollen_production[i, j] != 0, model.flowers)
+            return (i, j)
+        end
+    end
 end
 
 function bee_step!(bee, model)
@@ -343,6 +346,7 @@ function create_world(
             zeros(100, 100)
         )
     ],
+    area_sqm::Float64=10000.0,
     land_type::Array{Symbol,2}=fill(:grass_land, 100, 100),
     tile_size::Float64=1.0, # m
     forging_period::UnitRange{Int}=8*60*60:16*60*60, # seconds per day
