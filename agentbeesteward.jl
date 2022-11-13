@@ -61,6 +61,7 @@ end
     mated::Bool
     spermatheca::Vector{Float64}
     alleles::Vector{Float64}
+    cumul_incubation_received::FLoat64 # J
 end
 
 function winter_mortality_probibility(bee)
@@ -223,6 +224,17 @@ function bee_step!(bee, model)
                 bee.colony.energy_store -= energy_cost
                 personal_time += 24 * 60 * 60
             elseif bee.activity == :nursing
+                # (2880s = 48 min) time spent on incubation - ca. 48 min. between foraging flights of incubating queen, Heinrich, p. 92, Fig. 5.2
+                heat_provided = 2880 * 0.000000217013888 * bee.weight
+                heat_provided_per_brood = any(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) ? heat_provided / count(other_bee -> other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa), model) : 0
+                for other_bee in model
+                    if other_bee.colony === bee.colony && (other_bee.stage == :egg || other_bee.stage == :larva || other_bee.stage == :pupa)
+                        other_bee.cumul_incubation_received += heat_provided_per_brood
+                    end
+                end
+                bee.colony.summed_incubation_today += heat_provided
+                bee.energy_store -= heat_provided
+                personal_time += 2880
             elseif bee.activity == :foraging_pollen
             elseif bee.activity == :foraging_nectar
             end
