@@ -17,6 +17,7 @@ struct Species
     pollen_to_bodymass_factor::Float64
     min_pollen_store::Float64 # g
     dev_quota_incubation_today::Float64 # J
+    egg_weight::Float64 # g
 end
 
 mutable struct Flowers
@@ -146,7 +147,17 @@ function bee_step!(bee, model)
         # searching for nest
         if rand() < bee.species.chance_find_nest
             # found nest
-            new_colony = Colony(find_nesting_site(bee, model), typemax(Int), typemax(Int), typemax(Int), typemax(Int), 873, 0)
+            new_colony = Colony(
+                find_nesting_site(bee, model),
+                typemax(Int),
+                typemax(Int),
+                typemax(Int),
+                typemax(Int),
+                873,
+                0,
+                0,
+                0
+            )
             bee.colony = new_colony
             append!(model.colonies, new_colony)
             bee.activity = :resting
@@ -179,8 +190,31 @@ function bee_step!(bee, model)
 
             # do that activity
             if bee.activity == :resting
-                bee.personal_time += 0.5 * 60 * 60
+                personal_time += 0.5 * 60 * 60
             elseif bee.activity == :egg_laying
+                pollen_cost = bee.species.egg_weight * bee.species.pollen_to_bodymass_factor
+                energy_cost = pollen_cost * model.energy_required_for_pollen_assimilation
+                if bee.colony.pollen_store > pollen_cost && bee.colony.energy_store > energy_cost
+                    add_agent!(Bee(
+                        bee.colony,
+                        bee.species,
+                        :undefined,
+                        :egg,
+                        :resting,
+                        typemax(Int),
+                        bee.species.egg_weight,
+                        0,
+                        typemax(Int),
+                        typemax(Int),
+                        typemax(Int),
+                        typemax(Int),
+                        Vector{Int}(),
+                        [rand(bee.alleles)]
+                    ))
+                end
+                bee.colony.pollen_store -= pollen_cost
+                bee.colony.energy_store -= energy_cost
+                personal_time += 24 * 60 * 60
             elseif bee.activity == :nursing
             elseif bee.activity == :foraging_pollen
             elseif bee.activity == :foraging_nectar
