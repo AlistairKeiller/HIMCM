@@ -119,7 +119,7 @@ end
 
 function foraging_searching(bee, model)
     for i ∈ 1:model.sizeof(land_type)[1], j ∈ 1:model.sizeof(land_type)[2]
-        if model.land_type[i, j] ∈ bee.species.foraging_land_types && norm((i, j) - bee.pos) && any(flowers -> flowers.name ∈ bee.species.foraging_food_sources && flowers.pollen_production[i, j] != 0, model.flowers)
+        if model.land_type[i, j] ∈ bee.species.foraging_land_types && norm((i, j) - bee.pos) < sqrt(model.area_sqm / π) && any(flowers -> flowers.name ∈ bee.species.foraging_food_sources && flowers.pollen_production[i, j] != 0, model.flowers)
             return (i, j)
         end
     end
